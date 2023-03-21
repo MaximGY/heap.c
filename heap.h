@@ -1,5 +1,3 @@
-#include <stdlib.h>
-
 // Represent a heap
 typedef struct Heap Heap;
 
