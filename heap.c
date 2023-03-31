@@ -3,7 +3,7 @@
 
 // Represent a heap
 typedef struct Heap {
-    HeapEntry* data;
+    HeapEntry* entries;
     size_t size;
     size_t capacity;
 } Heap;
@@ -35,20 +35,26 @@ size_t right_child(size_t i) {
 }
 
 size_t smallest_child(Heap* heap, size_t i) {
-    return right_child(i) < heap->size && heap->data[left_child(i)].priority > heap->data[right_child(i)].priority ? right_child(i) : left_child(i);
+    size_t rchild = right_child(i);
+    size_t lchild = left_child(i);
+    return rchild < heap->size && heap->entries[lchild].priority > heap->entries[rchild].priority ? rchild : lchild;
 }
 
 void sift_up(Heap* heap, size_t i) {
-    while (i > 0 && heap->data[parent(i)].priority > heap->data[i].priority) {
-        swap(heap->data + i, heap->data + parent(i));
-        i = parent(i);
+    size_t pi = parent(i);
+    while (i > 0 && heap->entries[pi].priority > heap->entries[i].priority) {
+        swap(heap->entries + i, heap->entries + pi);
+        i = pi;
+        pi = parent(pi);
     }
 }
 
 void sift_down(Heap* heap, size_t i) {
-    while (left_child(i) < heap->size && heap->data[smallest_child(heap, i)].priority < heap->data[i].priority) {
-        swap(heap->data + smallest_child(heap, i), heap->data + i);
-        i = smallest_child(heap, i);
+    size_t si = smallest_child(heap, i);
+    while (left_child(i) < heap->size && heap->entries[si].priority < heap->entries[i].priority) {
+        swap(heap->entries + si, heap->entries + i);
+        i = si;
+        si = smallest_child(heap, si);
     }
 }
 
@@ -58,7 +64,7 @@ Heap* heap_new() {
     Heap* heap;
 
     if (!(heap = (Heap*) malloc(sizeof(Heap)))) return NULL;
-    if (!(heap->data = malloc(sizeof(HeapEntry)))) {
+    if (!(heap->entries = malloc(sizeof(HeapEntry)))) {
         free(heap);
         return NULL;
     };
@@ -70,7 +76,7 @@ Heap* heap_new() {
 }
 
 void heap_free(Heap* heap) {
-    free(heap->data);
+    free(heap->entries);
     free(heap);
 }
 
@@ -78,11 +84,11 @@ void heap_free(Heap* heap) {
 void heap_insert(Heap* heap, void* data, int priority) {
     // When heap is full, double its capacity (overhead is O(1), overall)
     if (heap->size == heap->capacity) {
-        heap->data = realloc(heap->data, heap->capacity * 2 * sizeof(HeapEntry));
+        heap->entries = realloc(heap->entries, heap->capacity * 2 * sizeof(HeapEntry));
         heap->capacity *= 2;
     }
 
-    heap->data[heap->size++] = (HeapEntry) { .data = data, .priority = priority };
+    heap->entries[heap->size++] = (HeapEntry) { .data = data, .priority = priority };
     sift_up(heap, heap->size - 1);
 }
 
@@ -90,11 +96,11 @@ void heap_insert(Heap* heap, void* data, int priority) {
 void* heap_pop(Heap* heap) {
     if (!heap->size) return NULL;
 
-    swap(heap->data, heap->data + heap->size - 1);
+    swap(heap->entries, heap->entries + heap->size - 1);
     heap->size--;
     sift_down(heap, 0);
 
-    return heap->data[heap->size].data;
+    return heap->entries[heap->size].data;
 }
 
 // Bump up the priority of an entry in the heap
@@ -104,8 +110,8 @@ void* heap_pop(Heap* heap) {
 void heap_bump(Heap* heap, void* data, int new_priority) {
     size_t i = 0;
 
-    while (heap->data[i].data != data) i++;
+    while (heap->entries[i].data != data) i++;
 
-    heap->data[i].priority = new_priority;
+    heap->entries[i].priority = new_priority;
     sift_up(heap, i);
 }
